@@ -21,9 +21,6 @@ jobs:
   build-and-test:
     name: ${{ matrix.target_type }}
     runs-on: ubuntu-latest
-    env:
-      # Keep pack installation and the local VSI loader on the same explicit root.
-      CMSIS_PACK_ROOT: ${{ github.workspace }}/.cmsis-packs
 
     strategy:
       fail-fast: false
@@ -63,7 +60,7 @@ jobs:
         uses: actions/cache@v6
         with:
           key: cmsis-packs-${{ matrix.target_type }}-${{ hashFiles('*.csolution.yml', 'pose-estimation.cproject.yml', 'board/**/*.clayer.yml', 'sdsio/**/*.clayer.yml') }}
-          path: ${{ env.CMSIS_PACK_ROOT }}
+          path: ~/.cache/arm/packs
 
       - name: Build ${{ matrix.target_type }}
         run: cbuild cmsis-executorch-pose.csolution.yml --active ${{ matrix.target_type }} --packs
