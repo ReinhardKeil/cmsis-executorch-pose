@@ -3,7 +3,7 @@
 # model/model.py or the csolution's mlops: node.
 layer:
   type: AI
-  description: Synthetic 17-keypoint pose estimator for Ethos-U55-256
+  description: Google MoveNet Lightning 17-keypoint estimator for Ethos-U55-256
 
   packs:
     - pack: PyTorch::ExecuTorch@1.5.1
@@ -19,11 +19,12 @@ layer:
     - component: Machine Learning:ExecuTorch:Kernel Utils
     - component: Machine Learning:ExecuTorch:Kernel Registration
     - component: Machine Learning:ExecuTorch:Backend EthosU
+    - component: Machine Learning:ExecuTorch Operators:Portable upsample_bilinear2d
     - component: Machine Learning:ExecuTorch Operators:Quantized dequantize
     - component: Machine Learning:ExecuTorch Operators:Quantized quantize
 
   groups:
-    - group: TinyPoseNet
+    - group: GoogleMoveNetLightning
       files:
         - file: ./model_pte.c
         - file: ./model_pte.h

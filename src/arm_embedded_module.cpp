@@ -10,6 +10,7 @@
 #include "arm_embedded_module.hpp"
 
 #include <executorch/extension/data_loader/buffer_data_loader.h>
+#include <cstdio>
 
 using executorch::extension::BufferDataLoader;
 
@@ -107,6 +108,8 @@ namespace arm
                 memory_allocator_->allocate(buffer_size, 16UL));
             if (buffer == nullptr)
             {
+              std::printf("ExecuTorch method pool needs at least %u more bytes\n",
+                          static_cast<unsigned>(buffer_size));
               ET_LOG(Error, "Could not allocate memory for memory planned buffer size %d", (int)buffer_size);
               return Error::MemoryAllocationFailed;
             }

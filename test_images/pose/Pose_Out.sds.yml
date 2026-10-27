@@ -1,0 +1,107 @@
+sds:
+  name: Pose estimation keypoints
+  description: 17 MoveNet joints as normalized x/y input coordinates and heatmap confidence
+  sample-frequency: 2
+  content:
+    - value: nose_x
+      type: float
+    - value: nose_y
+      type: float
+    - value: nose_confidence
+      type: float
+    - value: left_eye_x
+      type: float
+    - value: left_eye_y
+      type: float
+    - value: left_eye_confidence
+      type: float
+    - value: right_eye_x
+      type: float
+    - value: right_eye_y
+      type: float
+    - value: right_eye_confidence
+      type: float
+    - value: left_ear_x
+      type: float
+    - value: left_ear_y
+      type: float
+    - value: left_ear_confidence
+      type: float
+    - value: right_ear_x
+      type: float
+    - value: right_ear_y
+      type: float
+    - value: right_ear_confidence
+      type: float
+    - value: left_shoulder_x
+      type: float
+    - value: left_shoulder_y
+      type: float
+    - value: left_shoulder_confidence
+      type: float
+    - value: right_shoulder_x
+      type: float
+    - value: right_shoulder_y
+      type: float
+    - value: right_shoulder_confidence
+      type: float
+    - value: left_elbow_x
+      type: float
+    - value: left_elbow_y
+      type: float
+    - value: left_elbow_confidence
+      type: float
+    - value: right_elbow_x
+      type: float
+    - value: right_elbow_y
+      type: float
+    - value: right_elbow_confidence
+      type: float
+    - value: left_wrist_x
+      type: float
+    - value: left_wrist_y
+      type: float
+    - value: left_wrist_confidence
+      type: float
+    - value: right_wrist_x
+      type: float
+    - value: right_wrist_y
+      type: float
+    - value: right_wrist_confidence
+      type: float
+    - value: left_hip_x
+      type: float
+    - value: left_hip_y
+      type: float
+    - value: left_hip_confidence
+      type: float
+    - value: right_hip_x
+      type: float
+    - value: right_hip_y
+      type: float
+    - value: right_hip_confidence
+      type: float
+    - value: left_knee_x
+      type: float
+    - value: left_knee_y
+      type: float
+    - value: left_knee_confidence
+      type: float
+    - value: right_knee_x
+      type: float
+    - value: right_knee_y
+      type: float
+    - value: right_knee_confidence
+      type: float
+    - value: left_ankle_x
+      type: float
+    - value: left_ankle_y
+      type: float
+    - value: left_ankle_confidence
+      type: float
+    - value: right_ankle_x
+      type: float
+    - value: right_ankle_y
+      type: float
+    - value: right_ankle_confidence
+      type: float

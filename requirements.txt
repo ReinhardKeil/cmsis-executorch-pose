@@ -12,5 +12,9 @@ executorch==1.5.1
 torch==2.14.0
 torchao==0.18.0
 
+# Load the Apache-2.0 MoveNet ONNX checkpoint as a PyTorch graph for export.
+onnx==1.23.2
+onnx2torch==1.5.15
+
 # Vela, the Ethos-U compiler. Same pin as executorch's `ethos_u` extra.
 ethos-u-vela==5.1.0

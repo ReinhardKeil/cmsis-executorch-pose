@@ -1,9 +1,6 @@
 sdsio:
   interface:
-    socket:
-      ipaddr: 127.0.0.1
-      port: 5100
-      connect:
+    usb:
 
   workdir: .
   metadir: .
@@ -15,5 +12,5 @@ sdsio:
       view: csv
 
   play:
-    - step: "Synthetic pose frames"
+    - step: "COCO pose validation frames"
       labels: [ 0 ]

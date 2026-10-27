@@ -113,7 +113,7 @@ LR_ROM __ROM_BASE NOCOMPRESS __ROM_SIZE  {    ; load region size_region
    */
 
   RW_SRAM1 APP_SRAM1_BASE APP_SRAM1_SIZE  {  ; Update sections as needed
-
+   * (.bss.sram1)
   }
 
 #endif

@@ -1,0 +1,11 @@
+sdsio:
+  workdir: .
+  metadir: .
+  streams:
+    - name: Pose_In
+      view: image
+    - name: Pose_Out
+      view: csv
+  play:
+    - step: "Pose frames on FVP"
+      labels: [0]

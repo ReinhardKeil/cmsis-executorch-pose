@@ -38,11 +38,11 @@
 // <h> MRAM User Region
 //   <o> User Base address <0x80000000-0x8057FFFF:8>
 //   <i> Defines base address of MRAM user region
-#define APP_MRAM_USER_BASE   0x80400000
+#define APP_MRAM_USER_BASE   0x80580000
 
 //   <o> User Region size [bytes] <0x0-0x00580000:8>
 //   <i> Defines size of MRAM user region
-#define APP_MRAM_USER_SIZE    0x00180000   // 1.5 MB
+#define APP_MRAM_USER_SIZE    0x00000000
 
 // Application executable MRAM region (before USER area)
 #define APP_CODE_MRAM_SIZE  (APP_MRAM_USER_BASE - APP_MRAM_HP_BASE)

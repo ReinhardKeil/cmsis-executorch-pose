@@ -107,6 +107,9 @@ void clock_init(void)
     /* Enable power to USB phy */
     runp.phy_pwr_gating |= USB_PHY_MASK;
 
+    /* Keep the memories used by the USB controller and its DMA powered. */
+    runp.memory_blocks |= SRAM0_MASK | SRAM1_MASK | MRAM_MASK;
+
     /* Set the current run configuration to SE */
     rval = SERVICES_set_run_cfg(se_services_s_handle, &runp, &error_code);
     if (rval != 0) {

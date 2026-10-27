@@ -1,0 +1,36 @@
+{
+  "input_width": 192,
+  "input_height": 192,
+  "frames": [
+    {
+      "timeslot": 0,
+      "source": "test_images/pose/coco/coco_000000000785_ski.jpg",
+      "source_width": 640,
+      "source_height": 425,
+      "resized_width": 192,
+      "resized_height": 128,
+      "pad_left": 0,
+      "pad_top": 32
+    },
+    {
+      "timeslot": 500000,
+      "source": "test_images/pose/coco/coco_000000000885_tennis_crop.jpg",
+      "source_width": 640,
+      "source_height": 403,
+      "resized_width": 192,
+      "resized_height": 121,
+      "pad_left": 0,
+      "pad_top": 35
+    },
+    {
+      "timeslot": 1000000,
+      "source": "test_images/pose/coco/coco_000000001490_surf.jpg",
+      "source_width": 640,
+      "source_height": 315,
+      "resized_width": 192,
+      "resized_height": 94,
+      "pad_left": 0,
+      "pad_top": 49
+    }
+  ]
+}

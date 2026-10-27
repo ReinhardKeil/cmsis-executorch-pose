@@ -1,45 +1,70 @@
 # Copyright 2026 Arm Limited and/or its affiliates.
 # SPDX-License-Identifier: Apache-2.0
-"""Tiny heat-map pose estimator trained on the synthetic SDS test poses."""
+"""Apache-2.0 Google MoveNet Lightning adapter for ExecuTorch/Ethos-U."""
 
 from pathlib import Path
 
+import onnx
 import torch
+import torch.nn.functional as F
+from onnx2torch import convert
+from PIL import Image, ImageOps
 from torch import nn
 
-INPUT_SHAPE = (1, 64, 64, 3)
+INPUT_SHAPE = (1, 192, 192, 3)
 JOINT_COUNT = 17
-WEIGHTS = Path(__file__).with_name("pose_weights.pt")
+MODEL = Path(__file__).with_name("movenet_singlepose_lightning_raw.onnx")
+CALIBRATION_IMAGES = Path(__file__).with_name("calibration_pose")
 
 
-class TinyPoseNet(nn.Module):
-    def __init__(self, input_shape: tuple[int, ...] = INPUT_SHAPE) -> None:
-        super().__init__()
-        channels = input_shape[-1]
-        self.net = nn.Sequential(
-            nn.Conv2d(channels, 16, 3, stride=2, padding=1),
-            nn.ReLU(),
-            nn.Conv2d(16, 32, 3, stride=2, padding=1),
-            nn.ReLU(),
-            nn.Conv2d(32, 32, 3, padding=1),
-            nn.ReLU(),
-            nn.Conv2d(32, JOINT_COUNT, 1),
+class StaticResize(nn.Module):
+    """Fixed 2x resize used by MoveNet's feature-pyramid network."""
+
+    def forward(self, image, _roi, _scales):
+        return F.interpolate(
+            image, scale_factor=2.0, mode="bilinear", align_corners=False
         )
 
-    def forward(self, image: torch.Tensor) -> torch.Tensor:
-        return self.net(image.permute(0, 3, 1, 2))
+
+class MoveNetLightning(nn.Module):
+    """Return heatmap, offset, regression, and center heads."""
+
+    def __init__(self):
+        super().__init__()
+        if not MODEL.exists():
+            raise FileNotFoundError(f"{MODEL} is missing")
+        self.network = convert(onnx.load(MODEL))
+        for name, module in list(self.network.named_modules()):
+            if type(module).__name__ == "OnnxResize":
+                setattr(self.network, name, StaticResize())
+
+    def forward(self, image):
+        heatmaps, offsets, regressions, center = self.network(image)
+        return torch.cat((heatmaps, offsets, regressions, center), dim=1)
 
 
-def get_model(input_shape: tuple[int, ...] = INPUT_SHAPE) -> nn.Module:
-    if not WEIGHTS.exists():
-        raise FileNotFoundError(f"{WEIGHTS} is missing; run tools/train_synthetic_pose.py")
-    model = TinyPoseNet(input_shape)
-    model.load_state_dict(torch.load(WEIGHTS, map_location="cpu", weights_only=True))
-    return model.eval()
+def get_model(input_shape=INPUT_SHAPE):
+    if tuple(input_shape) != INPUT_SHAPE:
+        raise ValueError(f"MoveNet Lightning requires {INPUT_SHAPE}")
+    return MoveNetLightning().eval()
 
 
-def get_calibration_inputs(
-    input_shape: tuple[int, ...] = INPUT_SHAPE, calibration_samples: int = 8
-) -> list[torch.Tensor]:
-    generator = torch.Generator().manual_seed(20261018)
-    return [torch.rand(input_shape, generator=generator) for _ in range(calibration_samples)]
+def get_calibration_inputs(input_shape=INPUT_SHAPE, calibration_samples=8):
+    paths = sorted(CALIBRATION_IMAGES.glob("*.jpg"))
+    if len(paths) < calibration_samples:
+        raise FileNotFoundError(
+            f"Need {calibration_samples} pose calibration images in "
+            f"{CALIBRATION_IMAGES}; found {len(paths)}"
+        )
+    inputs = []
+    for path in paths[:calibration_samples]:
+        with Image.open(path) as source:
+            image = ImageOps.pad(
+                source.convert("RGB"),
+                (input_shape[2], input_shape[1]),
+                method=Image.Resampling.BILINEAR,
+                color=(0, 0, 0),
+            )
+        tensor = torch.frombuffer(bytearray(image.tobytes()), dtype=torch.uint8)
+        inputs.append(tensor.reshape(input_shape).float() / 127.5 - 1.0)
+    return inputs

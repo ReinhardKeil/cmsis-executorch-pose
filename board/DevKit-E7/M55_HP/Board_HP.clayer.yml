@@ -35,6 +35,7 @@ layer:
   define:
     - CMSIS_target_header: \"DevKit-E7.h\"
     - ETHOSU55
+    - APP_DEVKIT_E7
     - NPU_QCONFIG: 1
     - NPU_REGIONCFG_0: 1
     - NPU_REGIONCFG_1: 0
