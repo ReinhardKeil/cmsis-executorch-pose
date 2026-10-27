@@ -123,6 +123,22 @@ model's bilinear feature-pyramid resize, and exposes the heads to ExecuTorch.
 Vela compiles the convolutional graph into four Ethos-U regions; three small
 bilinear resize operations use the ExecuTorch portable kernel.
 
+The generated [Vela summary](ai_layer_pose/vela_summary.txt) records the
+compiler results for Ethos-U55-256 at 400 MHz with `RTSS_HP_SRAM_MRAM` and
+`Shared_Sram`. Across the four delegated regions, Vela places all 164 reported
+operators on the NPU and reports 270,765,792 MACs per inference. The portable
+bilinear resize operations run outside these Vela regions.
+
+| Region | NPU operators | MACs | SRAM used | Off-chip flash used | SRAM traffic | Flash traffic |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 1 | 109 | 223,043,040 | 1,102.34 KiB | 2,271.86 KiB | 16.20 MB | 2.83 MB |
+| 2 | 12 | 967,680 | 31.62 KiB | 8.11 KiB | 0.22 MB | 0.01 MB |
+| 3 | 12 | 1,198,080 | 55.31 KiB | 2.95 KiB | 0.45 MB | 0.00 MB |
+| 4 | 31 | 45,556,992 | 561.59 KiB | 27.73 KiB | 6.14 MB | 0.03 MB |
+
+Memory use is reported per region and is not an additive application-memory
+total. Regenerate both the AI layer and this report with `create_ai_layer.py`.
+
 Eight photographs in `model/calibration_pose/` provide representative INT8
 activation ranges. Random-noise calibration caused large coordinate errors on
 occluded and distant people; photographic calibration corrected the hardware
