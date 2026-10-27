@@ -1,4 +1,5 @@
 ethosu.num_macs=256
+ethosu.extra_args=--fast
 mps3_board.telnetterminal0.quiet=1
 mps3_board.telnetterminal0.start_telnet=0
 mps3_board.telnetterminal1.quiet=1

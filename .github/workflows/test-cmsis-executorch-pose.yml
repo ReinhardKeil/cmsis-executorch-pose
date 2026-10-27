@@ -1,0 +1,98 @@
+# Copyright 2026 Arm Limited and/or its affiliates.
+# SPDX-License-Identifier: Apache-2.0
+
+name: Build and test pose application
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    name: ${{ matrix.target_type }}
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target_type: SSE-300-U55-256
+            fvp: FVP_Corstone_SSE-300_Ethos-U55
+            fvp_config: board/Corstone-300/fvp_config_u55_256.txt
+          - target_type: DevKit-E7-HP
+            fvp: ""
+            fvp_config: ""
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Activate vcpkg environment
+        uses: ARM-software/cmsis-actions/vcpkg@v1
+        with:
+          config: vcpkg-configuration.json
+          cache: cmsis-executorch-pose
+
+      # The default Arm license setup is for evaluation only.
+      - name: Activate Arm tool license
+        uses: ARM-software/cmsis-actions/armlm@v1
+
+      - name: Set up Python for FVP VSI
+        if: matrix.fvp != ''
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+
+      - name: Install FVP VSI dependency
+        if: matrix.fvp != ''
+        run: python -m pip install PyYAML==6.0.2
+
+      - name: Cache CMSIS packs
+        uses: actions/cache@v6
+        with:
+          key: cmsis-packs-${{ matrix.target_type }}-${{ hashFiles('*.csolution.yml', 'pose-estimation.cproject.yml', 'board/**/*.clayer.yml', 'sdsio/**/*.clayer.yml') }}
+          path: ~/.cache/arm/packs
+
+      - name: Build ${{ matrix.target_type }}
+        run: cbuild cmsis-executorch-pose.csolution.yml --active ${{ matrix.target_type }} --packs
+
+      - name: Run FVP reference test
+        if: matrix.fvp != ''
+        env:
+          PYTHONHOME: ${{ env.pythonLocation }}
+          SDSIO_FVP: ${{ github.workspace }}/test_images/pose/pose_fvp.sdsio.yml
+        run: |
+          set -o pipefail
+          mkdir -p test_images/pose/fvp-current
+          ${{ matrix.fvp }} \
+            -f ${{ matrix.fvp_config }} \
+            -a out/*/${{ matrix.target_type }}/*/*.hex \
+            --simlimit 120 2>&1 | tee fvp.log
+
+      - name: Compare FVP output with reference
+        if: matrix.fvp != ''
+        run: |
+          python tools/compare_pose_sds.py \
+            test_images/pose/fvp-current/Pose_Out.0.p.sds \
+            test_images/pose/Pose_Out.fvp.reference.sds
+
+      - name: Upload build artifacts
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: cmsis-executorch-pose-${{ matrix.target_type }}
+          path: |
+            out
+            fvp.log
+            test_images/pose/fvp-current/Pose_Out.0.p.sds
+            test_images/pose/sdsio.log
+          if-no-files-found: warn

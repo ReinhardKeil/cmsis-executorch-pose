@@ -1,4 +1,9 @@
-# Using ExecuTorch with CMSIS Developer Assistent
+# Using ExecuTorch with CMSIS Developer Assistant
+
+[![Build and test pose application](https://github.com/reinhardkeil/cmsis-executorch-pose/actions/workflows/test-cmsis-executorch-pose.yml/badge.svg)](https://github.com/reinhardkeil/cmsis-executorch-pose/actions/workflows/test-cmsis-executorch-pose.yml)
+[![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-green.svg)](LICENSE)
+[![CMSIS-Toolbox: 2.15](https://img.shields.io/badge/CMSIS--Toolbox-2.15-blue.svg)](https://open-cmsis-pack.github.io/cmsis-toolbox/)
+[![ExecuTorch: 1.5.1](https://img.shields.io/badge/ExecuTorch-1.5.1-blue.svg)](https://www.keil.arm.com/packs/executorch-pytorch/)
 
 This project started from the
 [Arm-Examples/CMSIS-Executorch](https://github.com/Arm-Examples/CMSIS-Executorch)
@@ -13,21 +18,31 @@ and visualization.
 
 ![Alif E7 pose-estimation results](test_images/pose/pose_overlay_e7.gif)
 
-## What was built
+## What this work adds
 
-The project demonstrates the complete embedded ML path:
+Starting from the template, this work adds the complete pose-estimation path:
 
 1. Describe the processor, NPU, Vela memory, and model input in CMSIS.
 2. Export and quantize a PyTorch model with ExecuTorch.
 3. Generate a target-specific CMSIS AI layer.
-4. Build and run on an FVP or physical board.
-5. Stream representative test data with SDS and validate the output.
+4. Build and run the same application on the Corstone-300 FVP and Alif E7.
+5. Stream representative test data with SDS and validate the output on both.
+6. Build both targets in CI and compare the FVP result with a tolerant reference.
+7. Map keypoints back to the source photographs and generate an animated GIF.
 
-| Solution | Application | Target |
+| Added artifact | Purpose | Coverage |
 | --- | --- | --- |
-| `cmsis-executorch.csolution.yml` | TinyCNN | Corstone-320 / Ethos-U85-256 FVP |
-| `cmsis-executorch-u55.csolution.yml` | TinyCNN | Corstone-300 / Ethos-U55 FVP |
-| `cmsis-executorch-pose.csolution.yml` | Google MoveNet Lightning | Corstone-300 FVP and Alif DevKit-E7 / M55_HP / Ethos-U55-256 |
+| `cmsis-executorch-pose.csolution.yml` | Google MoveNet Lightning pose application | Corstone-300 FVP and Alif DevKit-E7 / M55_HP / Ethos-U55-256 |
+| `test_images/pose/` | Calibration-independent evaluation data, E7 result, FVP reference, transforms, and visualization | Three representative COCO images |
+| `.github/workflows/test-cmsis-executorch-pose.yml` | Build and reference-test workflow | Builds both targets and runs the three-image FVP comparison |
+| `tools/compare_pose_sds.py` | Tolerant SDS output comparator | Coordinates, confidence values, record structure, and non-finite values |
+| `tools/view_pose_sds.py` | Pose renderer and GIF generator | Reverses letterboxing and overlays keypoints and skeletons on source images |
+| `test_images/pose/pose_overlay_e7.gif` | Visual result from the E7 hardware run | Animated comparison across all three evaluation images |
+
+The original `cmsis-executorch.csolution.yml` and
+`cmsis-executorch-u55.csolution.yml` TinyCNN examples are retained from the
+[template repository](https://github.com/Arm-Examples/CMSIS-Executorch) as
+reference material; they were not created as part of the pose application.
 
 ## Prerequisites
 
@@ -58,7 +73,7 @@ layers are committed, so the solutions build without first running Python.
 Command-line examples:
 
 ```shell
-cbuild cmsis-executorch.csolution.yml --active SSE-320-U85
+cbuild cmsis-executorch-pose.csolution.yml --active SSE-300-U55-256
 cbuild cmsis-executorch-pose.csolution.yml --active DevKit-E7-HP
 ```
 
@@ -195,6 +210,61 @@ provenance and file-format details.
 
 CMSIS describes the hardware, Python produces a target-specific AI layer, and
 the regular CMSIS build consumes that layer without invoking Python.
+
+## CI testing
+
+The single [GitHub Actions workflow](.github/workflows/test-cmsis-executorch-pose.yml)
+builds the pose solution for both targets:
+
+- `DevKit-E7-HP` verifies that the application, Alif board layer, USB SDS
+  transport, ExecuTorch runtime, and committed AI layer compile together.
+- `SSE-300-U55-256` builds the same application for the Corstone-300 FVP and
+  runs an automated pose reference test on Ethos-U55-256.
+
+The FVP test sets `SDSIO_FVP` to `test_images/pose/pose_fvp.sdsio.yml`. The
+simulator's VSI3 implementation then acts as the SDSIO server: it plays the
+three committed `Pose_In` frames, records `Pose_Out`, and stops after playback.
+No separate SDSIO server or hardware connection is needed in CI.
+
+`tools/compare_pose_sds.py` compares every returned value with the committed
+FVP reference. It requires the same three timeslots and 17 keypoints, rejects
+missing, duplicate, malformed, empty, or non-finite records, and applies
+separate absolute tolerances:
+
+- normalized x/y coordinate error: `0.02` (about 3.8 pixels at 192 x 192);
+- keypoint-confidence error: `0.05`.
+
+The tolerance absorbs small compiler and simulator numerical differences while
+still detecting material pose regressions. The generated FVP output, SDSIO log,
+and build products are uploaded when a job passes or fails.
+
+All three evaluation images remain in the CI test. They cover an unobstructed
+subject, a bent and partly occluded subject, and a small distant subject.
+
+The Corstone-300 configuration sets `ethosu.extra_args=--fast`. This FVP option
+accelerates Ethos-U execution for functional tests but deliberately sacrifices
+cycle accuracy, so it must not be used for performance measurement. With the
+AC6 Debug build and FVP 11.32.23, a local Windows run processed all three
+images in about 23 seconds in fast mode, compared with about 7 minutes 5
+seconds without it—approximately an 18x speedup. Both modes produced
+byte-identical pose records in this test. FVP speed still depends on the host;
+these figures estimate CI duration, not application performance on the E7.
+
+FVP and hardware-in-the-loop (HIL) testing are complementary. FVP provides a
+reproducible functional regression on every change. HIL remains necessary to
+validate the real E7 memory system, Ethos-U integration, USB transport, timing,
+and board behavior; the CI result must not be interpreted as an E7 hardware
+pass.
+
+The minimum prompts used to create this CI coverage were:
+
+1. > Replace the obsolete template workflows with one build-and-test workflow
+   > for the pose application. Build both the Alif DevKit-E7 and Corstone-300
+   > targets without claiming hardware coverage in CI.
+2. > Add a headless Corstone-300/Ethos-U55 FVP reference test using the
+   > committed SDS pose frames. Preserve a reference output and compare new
+   > results with explicit coordinate and confidence tolerances. Explain how
+   > this complements HIL and document the measured simulation speed.
 
 ## Project layout
 

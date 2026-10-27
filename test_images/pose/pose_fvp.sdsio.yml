@@ -8,4 +8,5 @@ sdsio:
       view: csv
   play:
     - step: "Pose frames on FVP"
+      recdir: fvp-current
       labels: [0]
